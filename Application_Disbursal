@@ -1,0 +1,23 @@
+SELECT application_datetime::date,
+        COUNT(id) AS application,
+        sum(principal/100) as amount_disbursed,
+                avg(principal/100) as avg_amount_disbursed,
+
+        COUNT(CASE 
+                WHEN approval_datetime IS NOT NULL THEN id ELSE NULL 
+              END) AS approval,
+        COUNT(CASE
+                WHEN disbursal_status = 1 THEN id ELSE NULL
+              END) AS disbursal,
+        COUNT(CASE 
+                WHEN disbursal_status = 1 THEN id ELSE NULL
+              END)::float / count(id) AS disbursal_rate,
+        COUNT(CASE 
+                WHEN approval_datetime IS NOT NULL THEN id ELSE NULL
+              END)::float / count(id) AS approval_rate
+FROM loan_loan
+WHERE DATE(application_datetime) >= DATE(NOW()) - INTERVAL '180 days'
+    AND is_fraudulent = 'false'
+    AND is_rescheduled = 'false'
+GROUP BY application_datetime::date
+ORDER BY application_datetime::date
