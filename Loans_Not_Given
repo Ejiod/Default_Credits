@@ -1,0 +1,67 @@
+with raw_data as (SELECT loans.id as loan_id, user_id, 
+        application_datetime,  
+        product_id,
+        approval_datetime,
+        count(approval_datetime) over(partition by user_id order by approval_datetime asc) as cardinal,
+        rejection_datetime, 
+        reasons_of_rejection,
+         CASE 
+    WHEN adjust_data->'attribution'->0->>'network' not ilike '%facebook%' and 
+    adjust_data->'attribution'->0->>'network' not ilike '%google%' or adjust_data->'attribution'->0->>'network'
+    is null then 'organic'
+WHEN adjust_data->'attribution'->0->>'network' ilike '%facebook%' then 'facebook'
+WHEN adjust_data->'attribution'->0->>'network' ilike '%google%' then 'google' END as acquisition_type,
+CASE 
+WHEN state IN ('Lagos','Oyo','Ogun','Ondo','Ekiti','Osun') then 'SW' 
+WHEN state IN ('Anambra','Imo','Enugu','Ebonyi','Abia') then 'SE' 
+WHEN state IN ('Plateau','Kogi','Nasarawa','Abuja','Benue','Kwara') then 'NC' 
+WHEN state IN ('Adamawa', 'Bauchi', 'Borno', 'Gombe', 'Taraba', 'Yobe') then 'NE'
+WHEN state in ('Kaduna', 'Katsina', 'Kano', 'Kebbi', 'Sokoto', 'Jigawa', 'Zamfara') then 'NW'
+WHEN state in ('Akwa-Ibom', 'Bayelsa', 'Cross-River', 'Delta', 'Edo', 'Rivers') then 'SS'
+end as regions
+
+FROM (SELECT DISTINCT ON (user_id) * FROM loan_loan ORDER BY user_id, application_datetime ASC) loans
+LEFT JOIN loan_loanproduct on loan_loanproduct.id = loans.product_id
+LEFT JOIN accounts_user ON loans.user_id = accounts_user.id	
+
+WHERE {{Product}}
+)
+SELECT date_trunc('month',rejection_datetime::date) as date,acquisition_type,regions,
+        count(case WHEN 0 = ANY(reasons_of_rejection) then 1 end ) as "00-Insufficient Income",
+        count(case WHEN 1 = ANY(reasons_of_rejection) then 1 end ) as "01-Restricted employment status",
+        count(case WHEN 2 = ANY(reasons_of_rejection) then 1 end ) as "02-Insufficient bank alerts in SMS",
+        count(case WHEN 3 = ANY(reasons_of_rejection) then 1 end ) as "03-Owes other lending houses",
+        count(case WHEN 4 = ANY(reasons_of_rejection) then 1 end ) as "04-Invalid Phone",
+        count(case WHEN 5 = ANY(reasons_of_rejection) then 1 end ) as "05-Inconsistent data",
+        count(case WHEN 6 = ANY(reasons_of_rejection) then 1 end ) as "06-Invalid BVN",
+        count(case WHEN 7 = ANY(reasons_of_rejection) then 1 end ) as "07-Falsification of details",
+        count(case WHEN 8 = ANY(reasons_of_rejection) then 1 end ) as "08-Other",
+        count(case WHEN 9 = ANY(reasons_of_rejection) then 1 end ) as "09-Insufficient device information",
+        count(case WHEN 10 = ANY(reasons_of_rejection) then 1 end ) as "10-Bad Loan History",
+        count(case WHEN 11 = ANY(reasons_of_rejection) then 1 end ) as "11-System stopped loans",
+        count(case WHEN 12 = ANY(reasons_of_rejection) then 1 end ) as "12-Loan officer rejected",
+        count(case WHEN 13 = ANY(reasons_of_rejection) then 1 end ) as "13-Model rejected",
+        count(case WHEN 14 = ANY(reasons_of_rejection) then 1 end ) as "14-No Valid card",
+        count(case WHEN 15 = ANY(reasons_of_rejection) then 1 end ) as "15-Contact person not in Contact list",
+        count(case WHEN 16 = ANY(reasons_of_rejection) then 1 end ) as "16-Contact person owes Quick Check",
+        count(case WHEN 17 = ANY(reasons_of_rejection) then 1 end ) as "17-Name on account does not match name on application",
+        count(case WHEN 18 = ANY(reasons_of_rejection) then 1 end ) as "18-Sales data invalid",
+        count(case WHEN 19 = ANY(reasons_of_rejection) then 1 end ) as "19-Amount ineligible",
+        count(case WHEN 20 = ANY(reasons_of_rejection) then 1 end ) as "20-Invalid bank details",
+        count(case WHEN 21 = ANY(reasons_of_rejection) then 1 end ) as "21-Customer has other loans active",
+        count(case WHEN 22 = ANY(reasons_of_rejection) then 1 end ) as "22-Contact person in another active loan",
+        count(case WHEN 23 = ANY(reasons_of_rejection) then 1 end ) as "23-User card used in more than one user",
+        count(case WHEN 24 = ANY(reasons_of_rejection) then 1 end ) as "24-Loan from problematic state",
+        count(case WHEN 25 = ANY(reasons_of_rejection) then 1 end ) as "25-Invalid bank account on disbursement",
+        count(case WHEN 26 = ANY(reasons_of_rejection) then 1 end ) as "26-User is suspended",
+        count(case WHEN 27 = ANY(reasons_of_rejection) then 1 end ) as "27-User is dead",
+        count(case WHEN 28 = ANY(reasons_of_rejection) then 1 end ) as "28-Putative fraudulent loan application",
+        count(case WHEN 29 = ANY(reasons_of_rejection) then 1 end ) as "29-Loan confirmation rejected by user",
+        count(case WHEN 30 = ANY(reasons_of_rejection) then 1 end ) as "30-Loan confirmation reject by system",
+        count(case WHEN 31 = ANY(reasons_of_rejection) then 1 end ) as "31-Loan confirmation reject by staff",
+        count(case WHEN 32 = ANY(reasons_of_rejection) then 1 end ) as "32-Loan in blocked geofence"
+
+FROM raw_data
+WHERE  product_id IN (1,5,6,7,8)
+and rejection_datetime >= now()::Date - interval '1000 days'
+GROUP BY 1,2,3
