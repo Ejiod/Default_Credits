@@ -1,0 +1,19 @@
+SELECT 
+DATE_TRUNC('month', approval_datetime::DATE) AS cohort,
+SUM(principal/100) AS total_granted,
+SUM(principal_defaulted/100)::FLOAT/SUM(principal/100)*100 AS total_NLP90,
+SUM(CASE WHEN employment_status = 6 and cardinal = 1 THEN principal_defaulted/100 ELSE 0 END)/SUM(CASE WHEN employment_status = 6 and cardinal =2 THEN principal/100 ELSE 0 END)::FLOAT*100 AS self_empl_card1,
+SUM(cASE WHEN employment_status = 0 and cardinal = 1 THEN principal_defaulted/100 ELSE 0 END)/SUM(CASE WHEN employment_status = 0 and cardinal =2 THEN principal/100 ELSE 0 END)::FLOAT*100 AS employed_card1,
+SUM(CASE WHEN employment_status = 6 and cardinal = 2 THEN principal_defaulted/100 ELSE 0 END)/SUM(CASE WHEN employment_status = 6 and cardinal =2 THEN principal/100 ELSE 0 END)::FLOAT*100 AS self_empl_card2,
+SUM(cASE WHEN employment_status = 0 and cardinal = 2 THEN principal_defaulted/100 ELSE 0 END)/SUM(CASE WHEN employment_status = 0 and cardinal =2 THEN principal/100 ELSE 0 END)::FLOAT*100 AS employed_card2,
+SUM(cASE WHEN employment_status = 0 and (cardinal > 2 and cardinal <=5) THEN principal_defaulted/100 ELSE 0 END)/SUM(CASE WHEN employment_status = 0 and (cardinal > 2 and cardinal <=5) THEN principal/100 ELSE 0 END)::FLOAT*100 AS employed_card3_5,
+SUM(cASE WHEN employment_status = 6 and (cardinal > 2 and cardinal <=5) THEN principal_defaulted/100 ELSE 0 END)/SUM(CASE WHEN employment_status = 6 and (cardinal > 2 and cardinal <=5) THEN principal/100 ELSE 0 END)::FLOAT*100 AS self_employed_card3_5,
+SUM(CASE WHEN employment_status = 6 and cardinal > 5 THEN principal_defaulted/100 ELSE 0 END)/SUM(CASE WHEN employment_status = 6 and cardinal > 5 THEN principal/100 ELSE 0 END)::FLOAT*100 AS self_empl_card6_,
+SUM(cASE WHEN employment_status = 0 and cardinal > 5 THEN principal_defaulted/100 ELSE 0 END)/SUM(CASE WHEN employment_status = 0 and cardinal  > 5 THEN principal/100 ELSE 0 END)::FLOAT*100 AS employed_card6_
+
+FROM loan_loan
+left join accounts_user on loan_loan.user_id = accounts_user.id
+WHERE approval_datetime::DATE >= '2021-01-01'
+AND lifecycle_status <> 7
+AND is_rescheduled IS FALSE
+GROUP BY DATE_TRUNC('month', approval_datetime::DATE)
