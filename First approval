@@ -1,0 +1,37 @@
+WITH applicants AS (
+    SELECT user_id,
+MIN(application_datetime::date) OVER (PARTITION BY user_id) as first_application_date
+
+FROM loan_loan 
+left join accounts_user on accounts_user.id = loan_loan.user_id
+where application_datetime >= '2022-01-01' 
+and product_id IN (1,5,6,7,8)
+),
+
+approval as (
+    SELECT user_id,
+MIN(approval_datetime::date) OVER (PARTITION BY user_id) as first_approved_date
+
+FROM loan_loan 
+where approval_datetime >= '2022-01-01' 
+
+),
+first_app_count as (
+SELECT  first_application_date, COUNT(distinct user_id) as first_applicants
+from applicants group by 1
+),
+first_approved_count as (
+SELECT  first_approved_date, COUNT(distinct user_id) as first_approved
+from approval group by 1
+)
+
+select first_app_count.*,first_approved,
+first_approved::float8/first_applicants::float8*100 as "#approved"
+from first_app_count
+join first_approved_count on first_approved_count.first_approved_date = first_app_count.first_application_date  
+
+
+
+
+
+
