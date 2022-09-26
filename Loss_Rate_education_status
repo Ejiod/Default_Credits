@@ -1,0 +1,11 @@
+SELECT  date_trunc('month',approval_datetime) as date_approved,cardinal,
+CASE WHEN accounts_user.education_status = 0 THEN 'primary'
+    WHEN accounts_user.education_status = 1 THEN 'Secondary'
+    WHEN accounts_user.residence_type = 2 THEN 'University' ELSE 'Others' END AS education_status,
+SUM(CASE WHEN lifecycle_status IN (2,3,5)
+THEN 1 ELSE 0 END)::FLOAT/COUNT(loan_loan.id)::float*100 as loss_rate,
+sum(principal_defaulted/100) as principal_defaulted
+FROM loan_loan 
+left join accounts_user on loan_loan.user_id = accounts_user.id
+where approval_datetime::date>='2020-01-01' and cardinal = 1
+group by 1,2,3
