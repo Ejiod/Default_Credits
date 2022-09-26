@@ -1,0 +1,63 @@
+WITH
+    user_cardinal AS (SELECT user_id, id AS loan_id, ROW_NUMBER() OVER (PARTITION BY user_id ORDER BY approval_datetime) AS overall_cardinal FROM loan_loan WHERE approval_datetime IS NOT NULL),
+potential as (
+    SELECT
+        loan_loan.principal / 100 as principal,
+        loan_loan.next_payment_date::date + interval '91 days' as default_date,
+        CASE
+             WHEN next_payment_date::date + interval '91 days' <= NOW()::date AND lifecycle_status IN(3,5) THEN principal_defaulted / 100 --if default date in the past
+             WHEN next_payment_date::date + interval '91 days' > NOW()::date AND lifecycle_status IN(1,2)  THEN balance / 100 --if default date in the future
+        END AS default_potential,
+        CASE WHEN repayment_datetime::date <= next_payment_date::date + interval '3 days' AND lifecycle_status = 4 THEN principal / 100 END
+        AS paid_on_time,
+        CASE WHEN
+            repayment_datetime::date > next_payment_date::date + interval '3 days' AND
+            repayment_datetime::date < next_payment_date::date + interval '91 days' AND
+            lifecycle_status in (4) THEN principal / 100
+        END AS CC_converted,
+        CASE 
+            WHEN (CAST(approval_datetime AS date) - date_of_birth) /365 <= 20 THEN '<20' 
+            WHEN (CAST(approval_datetime AS date) - date_of_birth) /365 <= 30 THEN '21-30' 
+            WHEN (CAST(approval_datetime AS date) - date_of_birth) /365 <= 40 THEN '31-40' 
+            WHEN (CAST(approval_datetime AS date) - date_of_birth) /365 <= 50 THEN '41-50' 
+            WHEN (CAST(approval_datetime AS date) - date_of_birth) /365 <= 60 THEN '51-60' 
+            WHEN (CAST(approval_datetime AS date) - date_of_birth) /365 <= 70 THEN '61-70'
+            ELSE '>70'
+        END AS "age_group"
+    FROM loan_loan
+    LEFT JOIN loan_loantype ON loan_loan.loan_type_id = loan_loantype.id
+    LEFT JOIN loan_loanproduct ON loan_loan.product_id = loan_loanproduct.id
+    LEFT JOIN user_cardinal ON loan_loan.id = user_cardinal.loan_id
+    LEFT JOIN accounts_user ON loan_loan.user_id = accounts_user.id
+    WHERE loan_loan.lifecycle_status IN (2,3,4,5)
+        AND {{cardinal}}
+        AND {{approval_datetime}}
+        AND {{Loan_type}}
+        AND {{product}}
+        AND is_fraudulent = false
+        AND disbursal_status = 1
+        AND is_rescheduled = false
+        AND loan_loan.experiments::text not ilike '%Katsina%'
+),
+sum_table as (
+        SELECT
+            date_trunc('month', default_date) as date,
+            "age_group",
+            sum(default_potential) as default_potential,
+            sum(paid_on_time) as paid_on_time,
+            sum(CC_converted) as CC_conversion,
+            sum(principal) as principal
+        FROM potential
+        WHERE default_date between '2019-01-01' AND '2099-12-31'
+        GROUP BY default_date,"age_group"
+        ORDER BY default_date
+)
+SELECT
+    "age_group",
+    COALESCE(SUM(default_potential),0) as "Default (inc. part payments)",
+    COALESCE(SUM(default_potential)*100 / SUM(principal),0) AS "%Default (inc. part payments)",
+    COALESCE(SUM(paid_on_time) / SUM(principal) * 100,0) as "%Paid on time",
+    COALESCE((SUM(CC_conversion) / (SUM(principal) - SUM(paid_on_time)))*100,0) as "%CC conversion rate"
+FROM sum_table
+GROUP BY  "age_group"
+ORDER BY   "age_group"
