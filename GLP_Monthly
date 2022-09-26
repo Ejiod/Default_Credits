@@ -1,0 +1,13 @@
+SELECT 
+date_trunc('day', created_at) - INTERVAL '1 DAY' AS calendar_date,
+SUM(balance/100) AS GLP,
+SUM(CASE WHEN lifecycle_status = 1 THEN (balance/100) END) AS Performing,
+SUM(CASE WHEN lifecycle_status = 2 AND CAST(created_at AS DATE) - CAST(next_payment_date AS DATE) BETWEEN 1 AND 30 THEN (balance/100) END) AS Watchlist,
+SUM(CASE WHEN lifecycle_status = 2 AND CAST(created_at AS DATE) - CAST(next_payment_date AS DATE) BETWEEN 31 AND 60 THEN (balance/100) END) AS Substandard,
+SUM(CASE WHEN lifecycle_status = 2 AND CAST(created_at AS DATE) - CAST(next_payment_date AS DATE) BETWEEN 61 AND 90 THEN (balance/100) END) AS Doubtful
+FROM dwhloan
+WHERE lifecycle_status IN (1,2)
+AND date_trunc('day', created_at) IN ('2020-07-01','2020-08-01','2020-09-01','2020-10-01','2020-11-01','2020-12-01','2021-01-01','2021-02-01','2021-03-01','2021-04-01','2021-05-01','2021-06-01','2021-07-01','2021-08-01','2021-09-01','2021-10-01',
+'2021-11-01','2021-12-01','2022-01-01','2022-02-01','2022-03-01','2022-03-31','2022-05-01','2022-06-01','2022-07-01','2022-08-01','2022-09-01','2022-10-01')
+GROUP BY date_trunc('day', created_at) - INTERVAL '1 DAY'
+ORDER BY date_trunc('day', created_at) - INTERVAL '1 DAY' ASC
