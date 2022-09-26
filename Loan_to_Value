@@ -1,0 +1,22 @@
+
+
+WITH cohorts AS (
+    SELECT user_id,
+MIN(DATE_TRUNC('Month',date_of_approval)) OVER (PARTITION BY user_id) as cohort
+FROM loans_loaninfo
+WHERE date_of_approval IS NOT NULL
+GROUP BY user_id, date_of_approval
+ORDER BY user_id, date_of_approval ASC)
+
+SELECT 
+cohort,
+SUM(amount_repaid - amount_amortized) AS total_revenue,
+count(*) AS number_of_loans,
+SUM(amount_repaid - amount_amortized)/count(*) AS avg_revenue
+
+FROM loans_loaninfo 
+LEFT JOIN cohorts ON (cohorts.user_id = loans_loaninfo.user_id)
+WHERE status = 'PAID'AND amount_repaid > amount_amortized and {{cardinal}}
+AND is_instalment IS FALSE and is_fraudulent IS FALSE AND loans_loaninfo.user_id != 12
+GROUP BY cohorts.cohort
+ORDER BY 1, 2
