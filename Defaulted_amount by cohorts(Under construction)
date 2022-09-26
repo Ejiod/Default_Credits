@@ -1,0 +1,314 @@
+WITH cohorts AS (
+    SELECT  DISTINCT user_id,cardinal,
+    date_trunc('month',next_payment_date::date + interval '90 days') as default_month,
+MIN(DATE_TRUNC('Month',approval_datetime)) OVER (PARTITION BY user_id) as cohort_month, ----###first_applied_date
+EXTRACT(YEAR FROM AGE(date_trunc('month',next_payment_date::date + interval '90 days'),MIN(date_trunc('month',next_payment_date::date + interval '90 days')) 
+OVER (PARTITION BY user_id)))*12 + EXTRACT(MONTHS FROM AGE(date_trunc('month',next_payment_date::date + interval '90 days') ,
+MIN(date_trunc('month',next_payment_date::date + interval '90 days')) OVER (PARTITION BY user_id))) AS retention_month 
+FROM loan_loan 
+where 
+     {{product}}
+    and loan_loan.experiments::text not ilike '%katsina%'
+    and is_fraudulent = false and is_rescheduled = false 
+    and approval_datetime is not null AND approval_datetime >='2015-03-01' and cardinal in (SELECT cardinal from loan_loan where cardinal <=14)),
+
+ customers AS (SELECT
+cohort_month,cohorts.cardinal,
+retention_month,
+ COUNT(DISTINCT cohorts.user_id) as number_of_customer,
+sum(principal_defaulted/100) FILTER(WHERE 
+ lifecycle_status IN (3)) as defaulted_amount
+ FROM cohorts
+left JOIN loan_loan on loan_loan.user_id = cohorts.user_id
+GROUP BY 1,2,3),
+
+month_cohorts as ( select
+cohort_month::DATE,
+retention_month,cardinal,
+number_of_customer,defaulted_amount,
+number_of_customer / FIRST_VALUE(number_of_customer) OVER (PARTITION BY cohort_month ORDER BY cardinal)::decimal*100 AS retention_rate
+FROM customers
+ORDER BY cohort_month ASC, retention_month ASC
+
+)
+SELECT '2021-05-01' AS cohort,
+max(case when cardinal = 1 and cohort_month = '2021-05-01' then defaulted_amount end) as c1,
+max(case when cardinal = 2 and cohort_month = '2021-05-01' then defaulted_amount end) as c2,
+max(case when cardinal = 3 and cohort_month = '2021-05-01' then defaulted_amount end) as c3,
+max(case when cardinal = 4 and cohort_month = '2021-05-01' then defaulted_amount end) as c4,
+max(case when cardinal = 5 and cohort_month = '2021-05-01' then defaulted_amount end) as c5,
+max(case when cardinal = 6 and cohort_month = '2021-05-01' then defaulted_amount end) as c6,
+max(case when cardinal = 7 and cohort_month = '2021-05-01' then defaulted_amount end) as c7,
+max(case when cardinal = 8 and cohort_month = '2021-05-01' then defaulted_amount end) as c8,
+max(case when cardinal = 9 and cohort_month = '2021-05-01' then defaulted_amount end) as c9,
+max(case when cardinal = 10 and cohort_month ='2021-05-01' then defaulted_amount end) as c10,
+max(case when cardinal = 11 and cohort_month ='2021-05-01' then defaulted_amount end) as c11,
+max(case when cardinal = 12 and cohort_month = '2021-05-01' then defaulted_amount end) as c12,
+max(case when cardinal = 13 and cohort_month = '2021-05-01' then defaulted_amount end) as c13,
+max(case when cardinal = 14 and cohort_month = '2021-05-01' then defaulted_amount end) as c14
+
+ from month_cohorts group by 1
+UNION all
+SELECT '2021-06-01' AS cohort,
+max(case when cardinal = 1 and cohort_month = '2021-06-01' then defaulted_amount end) as c1,
+max(case when cardinal = 2 and cohort_month = '2021-06-01' then defaulted_amount end) as c2,
+max(case when cardinal = 3 and cohort_month = '2021-06-01' then defaulted_amount end) as c3,
+max(case when cardinal = 4 and cohort_month = '2021-06-01' then defaulted_amount end) as c4,
+max(case when cardinal = 5 and cohort_month = '2021-06-01' then defaulted_amount end) as c5,
+max(case when cardinal = 6 and cohort_month = '2021-06-01' then defaulted_amount end) as c6,
+max(case when cardinal = 7 and cohort_month = '2021-06-01' then defaulted_amount end) as c7,
+max(case when cardinal = 8 and cohort_month = '2021-06-01' then defaulted_amount end) as c8,
+max(case when cardinal = 9 and cohort_month = '2021-06-01' then defaulted_amount end) as c9,
+max(case when cardinal = 10 and cohort_month ='2021-06-01' then defaulted_amount end) as c10,
+max(case when cardinal = 11 and cohort_month ='2021-06-01' then defaulted_amount end) as c11,
+max(case when cardinal = 12 and cohort_month = '2021-06-01' then defaulted_amount end) as c12,
+max(case when cardinal = 13 and cohort_month = '2021-06-01' then defaulted_amount end) as c13,
+max(case when cardinal = 14 and cohort_month = '2021-06-01' then defaulted_amount end) as c14
+ from month_cohorts group by 1
+UNION ALL
+ SELECT '2021-07-01' AS cohort,
+max(case when cardinal = 1 and cohort_month = '2021-07-01' then defaulted_amount end) as c1,
+max(case when cardinal = 2 and cohort_month = '2021-07-01' then defaulted_amount end) as c2,
+max(case when cardinal = 3 and cohort_month = '2021-07-01' then defaulted_amount end) as c3,
+max(case when cardinal = 4 and cohort_month = '2021-07-01' then defaulted_amount end) as c4,
+max(case when cardinal = 5 and cohort_month = '2021-07-01' then defaulted_amount end) as c5,
+max(case when cardinal = 6 and cohort_month = '2021-07-01' then defaulted_amount end) as c6,
+max(case when cardinal = 7 and cohort_month = '2021-07-01' then defaulted_amount end) as c7,
+max(case when cardinal = 8 and cohort_month = '2021-07-01' then defaulted_amount end) as c8,
+max(case when cardinal = 9 and cohort_month = '2021-07-01' then defaulted_amount end) as c9,
+max(case when cardinal = 10 and cohort_month ='2021-07-01' then defaulted_amount end) as c10,
+max(case when cardinal = 11 and cohort_month ='2021-07-01' then defaulted_amount end) as c11,
+max(case when cardinal = 12 and cohort_month = '2021-07-01' then defaulted_amount end) as c12,
+max(case when cardinal = 13 and cohort_month = '2021-07-01' then defaulted_amount end) as c13,
+max(case when cardinal = 14 and cohort_month = '2021-07-01' then defaulted_amount end) as c14
+ from month_cohorts group by 1
+UNION ALL
+
+ SELECT '2021-08-01' AS cohort,
+max(case when cardinal = 1 and cohort_month = '2021-08-01' then defaulted_amount end) as c1,
+max(case when cardinal = 2 and cohort_month = '2021-08-01' then defaulted_amount end) as c2,
+max(case when cardinal = 3 and cohort_month = '2021-08-01' then defaulted_amount end) as c3,
+max(case when cardinal = 4 and cohort_month = '2021-08-01' then defaulted_amount end) as c4,
+max(case when cardinal = 5 and cohort_month = '2021-08-01' then defaulted_amount end) as c5,
+max(case when cardinal = 6 and cohort_month = '2021-08-01' then defaulted_amount end) as c6,
+max(case when cardinal = 7 and cohort_month = '2021-08-01' then defaulted_amount end) as c7,
+max(case when cardinal = 8 and cohort_month = '2021-08-01' then defaulted_amount end) as c8,
+max(case when cardinal = 9 and cohort_month = '2021-08-01' then defaulted_amount end) as c9,
+max(case when cardinal = 10 and cohort_month ='2021-08-01' then defaulted_amount end) as c10,
+max(case when cardinal = 11 and cohort_month ='2021-08-01' then defaulted_amount end) as c11,
+max(case when cardinal = 12 and cohort_month = '2021-08-01' then defaulted_amount end) as c12,
+max(case when cardinal = 13 and cohort_month = '2021-08-01' then defaulted_amount end) as c13,
+max(case when cardinal = 14 and cohort_month = '2021-08-01' then defaulted_amount end) as c14
+ from month_cohorts group by 1
+
+ UNION ALL
+
+ SELECT '2021-09-01' AS cohort,
+max(case when cardinal = 1 and cohort_month = '2021-09-01' then defaulted_amount end) as c1,
+max(case when cardinal = 2 and cohort_month = '2021-09-01' then defaulted_amount end) as c2,
+max(case when cardinal = 3 and cohort_month = '2021-09-01' then defaulted_amount end) as c3,
+max(case when cardinal = 4 and cohort_month = '2021-09-01' then defaulted_amount end) as c4,
+max(case when cardinal = 5 and cohort_month = '2021-09-01' then defaulted_amount end) as c5,
+max(case when cardinal = 6 and cohort_month = '2021-09-01' then defaulted_amount end) as c6,
+max(case when cardinal = 7 and cohort_month = '2021-09-01' then defaulted_amount end) as c7,
+max(case when cardinal = 8 and cohort_month = '2021-09-01' then defaulted_amount end) as c8,
+max(case when cardinal = 9 and cohort_month = '2021-09-01' then defaulted_amount end) as c9,
+max(case when cardinal = 10 and cohort_month ='2021-09-01' then defaulted_amount end) as c10,
+max(case when cardinal = 11 and cohort_month ='2021-09-01' then defaulted_amount end) as c11,
+max(case when cardinal = 12 and cohort_month = '2021-09-01' then defaulted_amount end) as c12,
+max(case when cardinal = 13 and cohort_month = '2021-09-01' then defaulted_amount end) as c13,
+max(case when cardinal = 14 and cohort_month = '2021-09-01' then defaulted_amount end) as c14
+ from month_cohorts group by 1
+
+ UNION ALL 
+
+ SELECT '2021-10-01' AS cohort,
+max(case when cardinal = 1 and cohort_month = '2021-10-01' then defaulted_amount end) as c1,
+max(case when cardinal = 2 and cohort_month = '2021-10-01' then defaulted_amount end) as c2,
+max(case when cardinal = 3 and cohort_month = '2021-10-01' then defaulted_amount end) as c3,
+max(case when cardinal = 4 and cohort_month = '2021-10-01' then defaulted_amount end) as c4,
+max(case when cardinal = 5 and cohort_month = '2021-10-01' then defaulted_amount end) as c5,
+max(case when cardinal = 6 and cohort_month = '2021-10-01' then defaulted_amount end) as c6,
+max(case when cardinal = 7 and cohort_month = '2021-10-01' then defaulted_amount end) as c7,
+max(case when cardinal = 8 and cohort_month = '2021-10-01' then defaulted_amount end) as c8,
+max(case when cardinal = 9 and cohort_month = '2021-10-01' then defaulted_amount end) as c9,
+max(case when cardinal = 10 and cohort_month ='2021-10-01' then defaulted_amount end) as c10,
+max(case when cardinal = 11 and cohort_month ='2021-10-01' then defaulted_amount end) as c11,
+max(case when cardinal = 12 and cohort_month = '2021-10-01' then defaulted_amount end) as c12,
+max(case when cardinal = 13 and cohort_month = '2021-10-01' then defaulted_amount end) as c13,
+max(case when cardinal = 14 and cohort_month = '2021-10-01' then defaulted_amount end) as c14
+ from month_cohorts group by 1
+
+  UNION ALL 
+
+ SELECT '2021-11-01' AS cohort, 
+max(case when cardinal = 1 and cohort_month = '2021-11-01' then defaulted_amount end) as c1,
+max(case when cardinal = 2 and cohort_month = '2021-11-01' then defaulted_amount end) as c2,
+max(case when cardinal = 3 and cohort_month = '2021-11-01' then defaulted_amount end) as c3,
+max(case when cardinal = 4 and cohort_month = '2021-11-01' then defaulted_amount end) as c4,
+max(case when cardinal = 5 and cohort_month = '2021-11-01' then defaulted_amount end) as c5,
+max(case when cardinal = 6 and cohort_month = '2021-11-01' then defaulted_amount end) as c6,
+max(case when cardinal = 7 and cohort_month = '2021-11-01' then defaulted_amount end) as c7,
+max(case when cardinal = 8 and cohort_month = '2021-11-01' then defaulted_amount end) as c8,
+max(case when cardinal = 9 and cohort_month = '2021-11-01' then defaulted_amount end) as c9,
+max(case when cardinal = 10 and cohort_month ='2021-11-01' then defaulted_amount end) as c10,
+max(case when cardinal = 11 and cohort_month ='2021-11-01' then defaulted_amount end) as c11,
+max(case when cardinal = 12 and cohort_month = '2021-11-01' then defaulted_amount end) as c12,
+max(case when cardinal = 13 and cohort_month = '2021-11-01' then defaulted_amount end) as c13,
+max(case when cardinal = 14 and cohort_month = '2021-11-01' then defaulted_amount end) as c14
+ from month_cohorts group by 1
+
+UNION ALL
+
+ SELECT '2021-12-01' AS cohort,
+max(case when cardinal = 1 and cohort_month = '2021-12-01' then defaulted_amount end) as c1,
+max(case when cardinal = 2 and cohort_month = '2021-12-01' then defaulted_amount end) as c2,
+max(case when cardinal = 3 and cohort_month = '2021-12-01' then defaulted_amount end) as c3,
+max(case when cardinal = 4 and cohort_month = '2021-12-01' then defaulted_amount end) as c4,
+max(case when cardinal = 5 and cohort_month = '2021-12-01' then defaulted_amount end) as c5,
+max(case when cardinal = 6 and cohort_month = '2021-12-01' then defaulted_amount end) as c6,
+max(case when cardinal = 7 and cohort_month = '2021-12-01' then defaulted_amount end) as c7,
+max(case when cardinal = 8 and cohort_month = '2021-12-01' then defaulted_amount end) as c8,
+max(case when cardinal = 9 and cohort_month = '2021-12-01' then defaulted_amount end) as c9,
+max(case when cardinal = 10 and cohort_month ='2021-12-01' then defaulted_amount end) as c10,
+max(case when cardinal = 11 and cohort_month ='2021-12-01' then defaulted_amount end) as c11,
+max(case when cardinal = 12 and cohort_month = '2021-12-01' then defaulted_amount end) as c12,
+max(case when cardinal = 13 and cohort_month = '2021-12-01' then defaulted_amount end) as c13,
+max(case when cardinal = 14 and cohort_month = '2021-12-01' then defaulted_amount end) as c14
+ from month_cohorts group by 1
+
+ UNION ALL
+
+ SELECT '2022-01-01' AS cohort,
+max(case when cardinal = 1 and cohort_month = '2022-01-01' then defaulted_amount end) as c1,
+max(case when cardinal = 2 and cohort_month = '2022-01-01' then defaulted_amount end) as c2,
+max(case when cardinal = 3 and cohort_month = '2022-01-01' then defaulted_amount end) as c3,
+max(case when cardinal = 4 and cohort_month = '2022-01-01' then defaulted_amount end) as c4,
+max(case when cardinal = 5 and cohort_month = '2022-01-01' then defaulted_amount end) as c5,
+max(case when cardinal = 6 and cohort_month = '2022-01-01' then defaulted_amount end) as c6,
+max(case when cardinal = 7 and cohort_month = '2022-01-01' then defaulted_amount end) as c7,
+max(case when cardinal = 8 and cohort_month = '2022-01-01' then defaulted_amount end) as c8,
+max(case when cardinal = 9 and cohort_month = '2022-01-01' then defaulted_amount end) as c9,
+max(case when cardinal = 10 and cohort_month ='2022-01-01' then defaulted_amount end) as c10,
+max(case when cardinal = 11 and cohort_month ='2022-01-01' then defaulted_amount end) as c11,
+max(case when cardinal = 12 and cohort_month = '2022-01-01' then defaulted_amount end) as c12,
+max(case when cardinal = 13 and cohort_month = '2022-01-01' then defaulted_amount end) as c13,
+max(case when cardinal = 14 and cohort_month = '2022-01-01' then defaulted_amount end) as c14
+ from month_cohorts group by 1
+UNION ALL
+
+ SELECT '2022-02-01' AS cohort,
+max(case when cardinal = 1 and cohort_month = '2022-02-01' then defaulted_amount end) as c1,
+max(case when cardinal = 2 and cohort_month = '2022-02-01' then defaulted_amount end) as c2,
+max(case when cardinal = 3 and cohort_month = '2022-02-01' then defaulted_amount end) as c3,
+max(case when cardinal = 4 and cohort_month = '2022-02-01' then defaulted_amount end) as c4,
+max(case when cardinal = 5 and cohort_month = '2022-02-01' then defaulted_amount end) as c5,
+max(case when cardinal = 6 and cohort_month = '2022-02-01' then defaulted_amount end) as c6,
+max(case when cardinal = 7 and cohort_month = '2022-02-01' then defaulted_amount end) as c7,
+max(case when cardinal = 8 and cohort_month = '2022-02-01' then defaulted_amount end) as c8,
+max(case when cardinal = 9 and cohort_month = '2022-02-01' then defaulted_amount end) as c9,
+max(case when cardinal = 10 and cohort_month ='2022-02-01' then defaulted_amount end) as c10,
+max(case when cardinal = 11 and cohort_month ='2022-02-01' then defaulted_amount end) as c11,
+max(case when cardinal = 12 and cohort_month = '2022-02-01' then defaulted_amount end) as c12,
+max(case when cardinal = 13 and cohort_month = '2022-02-01' then defaulted_amount end) as c13,
+max(case when cardinal = 14 and cohort_month = '2022-02-01' then defaulted_amount end) as c14
+ from month_cohorts group by 1
+
+ UNION ALL
+
+ SELECT '2022-03-01' AS cohort,
+max(case when cardinal = 1 and cohort_month = '2022-03-01' then defaulted_amount end) as c1,
+max(case when cardinal = 2 and cohort_month = '2022-03-01' then defaulted_amount end) as c2,
+max(case when cardinal = 3 and cohort_month = '2022-03-01' then defaulted_amount end) as c3,
+max(case when cardinal = 4 and cohort_month = '2022-03-01' then defaulted_amount end) as c4,
+max(case when cardinal = 5 and cohort_month = '2022-03-01' then defaulted_amount end) as c5,
+max(case when cardinal = 6 and cohort_month = '2022-03-01' then defaulted_amount end) as c6,
+max(case when cardinal = 7 and cohort_month = '2022-03-01' then defaulted_amount end) as c7,
+max(case when cardinal = 8 and cohort_month = '2022-03-01' then defaulted_amount end) as c8,
+max(case when cardinal = 9 and cohort_month = '2022-03-01' then defaulted_amount end) as c9,
+max(case when cardinal = 10 and cohort_month ='2022-03-01' then defaulted_amount end) as c10,
+max(case when cardinal = 11 and cohort_month ='2022-03-01' then defaulted_amount end) as c11,
+max(case when cardinal = 12 and cohort_month = '2022-03-01' then defaulted_amount end) as c12,
+max(case when cardinal = 13 and cohort_month = '2022-03-01' then defaulted_amount end) as c13,
+max(case when cardinal = 14 and cohort_month = '2022-03-01' then defaulted_amount end) as c14
+ from month_cohorts group by 1
+
+ UNION ALL
+
+ SELECT '2022-04-01' AS cohort,
+max(case when cardinal = 1 and cohort_month = '2022-04-01' then defaulted_amount end) as c1,
+max(case when cardinal = 2 and cohort_month = '2022-04-01' then defaulted_amount end) as c2,
+max(case when cardinal = 3 and cohort_month = '2022-04-01' then defaulted_amount end) as c3,
+max(case when cardinal = 4 and cohort_month = '2022-04-01' then defaulted_amount end) as c4,
+max(case when cardinal = 5 and cohort_month = '2022-04-01' then defaulted_amount end) as c5,
+max(case when cardinal = 6 and cohort_month = '2022-04-01' then defaulted_amount end) as c6,
+max(case when cardinal = 7 and cohort_month = '2022-04-01' then defaulted_amount end) as c7,
+max(case when cardinal = 8 and cohort_month = '2022-04-01' then defaulted_amount end) as c8,
+max(case when cardinal = 9 and cohort_month = '2022-04-01' then defaulted_amount end) as c9,
+max(case when cardinal = 10 and cohort_month ='2022-04-01' then defaulted_amount end) as c10,
+max(case when cardinal = 11 and cohort_month ='2022-04-01' then defaulted_amount end) as c11,
+max(case when cardinal = 12 and cohort_month = '2022-04-01' then defaulted_amount end) as c12,
+max(case when cardinal = 13 and cohort_month = '2022-04-01' then defaulted_amount end) as c13,
+max(case when cardinal = 14 and cohort_month = '2022-04-01' then defaulted_amount end) as c14
+ from month_cohorts group by 1
+ 
+UNION ALL
+
+ SELECT '2022-05-01' AS cohort,
+max(case when cardinal = 1 and cohort_month = '2022-05-01' then defaulted_amount end) as c1,
+max(case when cardinal = 2 and cohort_month = '2022-05-01' then defaulted_amount end) as c2,
+max(case when cardinal = 3 and cohort_month = '2022-05-01' then defaulted_amount end) as c3,
+max(case when cardinal = 4 and cohort_month = '2022-05-01' then defaulted_amount end) as c4,
+max(case when cardinal = 5 and cohort_month = '2022-05-01' then defaulted_amount end) as c5,
+max(case when cardinal = 6 and cohort_month = '2022-05-01' then defaulted_amount end) as c6,
+max(case when cardinal = 7 and cohort_month = '2022-05-01' then defaulted_amount end) as c7,
+max(case when cardinal = 8 and cohort_month = '2022-05-01' then defaulted_amount end) as c8,
+max(case when cardinal = 9 and cohort_month = '2022-05-01' then defaulted_amount end) as c9,
+max(case when cardinal = 10 and cohort_month ='2022-05-01' then defaulted_amount end) as c10,
+max(case when cardinal = 11 and cohort_month ='2022-05-01' then defaulted_amount end) as c11,
+max(case when cardinal = 12 and cohort_month = '2022-05-01' then defaulted_amount end) as c12,
+max(case when cardinal = 13 and cohort_month = '2022-05-01' then defaulted_amount end) as c13,
+max(case when cardinal = 14 and cohort_month = '2022-05-01' then defaulted_amount end) as c14
+ from month_cohorts group by 1
+
+UNION ALL
+
+ SELECT '2022-06-01' AS cohort,
+max(case when cardinal = 1 and cohort_month = '2022-06-01' then defaulted_amount end) as c1,
+max(case when cardinal = 2 and cohort_month = '2022-06-01' then defaulted_amount end) as c2,
+max(case when cardinal = 3 and cohort_month = '2022-06-01' then defaulted_amount end) as c3,
+max(case when cardinal = 4 and cohort_month = '2022-06-01' then defaulted_amount end) as c4,
+max(case when cardinal = 5 and cohort_month = '2022-06-01' then defaulted_amount end) as c5,
+max(case when cardinal = 6 and cohort_month = '2022-06-01' then defaulted_amount end) as c6,
+max(case when cardinal = 7 and cohort_month = '2022-06-01' then defaulted_amount end) as c7,
+max(case when cardinal = 8 and cohort_month = '2022-06-01' then defaulted_amount end) as c8,
+max(case when cardinal = 9 and cohort_month = '2022-06-01' then defaulted_amount end) as c9,
+max(case when cardinal = 10 and cohort_month ='2022-06-01' then defaulted_amount end) as c10,
+max(case when cardinal = 11 and cohort_month ='2022-06-01' then defaulted_amount end) as c11,
+max(case when cardinal = 12 and cohort_month = '2022-06-01' then defaulted_amount end) as c12,
+max(case when cardinal = 13 and cohort_month = '2022-06-01' then defaulted_amount end) as c13,
+max(case when cardinal = 14 and cohort_month = '2022-06-01' then defaulted_amount end) as c14
+ from month_cohorts group by 1
+
+ UNION ALL
+
+ SELECT '2022-07-01' AS cohort,
+max(case when cardinal = 1 and cohort_month = '2022-07-01' then defaulted_amount end) as c1,
+max(case when cardinal = 2 and cohort_month = '2022-07-01' then defaulted_amount end) as c2,
+max(case when cardinal = 3 and cohort_month = '2022-07-01' then defaulted_amount end) as c3,
+max(case when cardinal = 4 and cohort_month = '2022-07-01' then defaulted_amount end) as c4,
+max(case when cardinal = 5 and cohort_month = '2022-07-01' then defaulted_amount end) as c5,
+max(case when cardinal = 6 and cohort_month = '2022-07-01' then defaulted_amount end) as c6,
+max(case when cardinal = 7 and cohort_month = '2022-07-01' then defaulted_amount end) as c7,
+max(case when cardinal = 8 and cohort_month = '2022-07-01' then defaulted_amount end) as c8,
+max(case when cardinal = 9 and cohort_month = '2022-07-01' then defaulted_amount end) as c9,
+max(case when cardinal = 10 and cohort_month ='2022-07-01' then defaulted_amount end) as c10,
+max(case when cardinal = 11 and cohort_month ='2022-07-01' then defaulted_amount end) as c11,
+max(case when cardinal = 12 and cohort_month = '2022-07-01' then defaulted_amount end) as c12,
+max(case when cardinal = 13 and cohort_month = '2022-07-01' then defaulted_amount end) as c13,
+max(case when cardinal = 14 and cohort_month = '2022-07-01' then defaulted_amount end) as c14
+ from month_cohorts group by 1
+ 
+ 
+ 
+ --select DATE_TRUNC('month',approval_datetime) as cohort_month,sum(principal_defaulted/100) from loan_loan group by 1 ORDER by 1
