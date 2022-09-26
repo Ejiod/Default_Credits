@@ -1,0 +1,17 @@
+with ccat as (
+SELECT 
+approval_datetime::date,repayment_datetime::date,next_payment_date::date as next_payment_date, user_id,state,employment_status,
+extract(day from repayment_datetime - approval_datetime) as days_,
+CASE WHEN extract(day from repayment_datetime - approval_datetime) BETWEEN 0 AND 8 THEN '0-7DAYS'
+WHEN extract(day from repayment_datetime - approval_datetime) BETWEEN 8 AND 15 THEN '8-14DAYS' 
+WHEN extract(day from repayment_datetime - approval_datetime) BETWEEN 15 AND 22 THEN '15-21DAYS' 
+WHEN extract(day from repayment_datetime - approval_datetime) BETWEEN 22 AND 30 THEN '22-30DAYS' ELSE '>30DAYS' END as repayment_group
+from loan_loan 
+left join accounts_user on loan_loan.user_id = accounts_user.id
+where cardinal = 1 and repayment_datetime is not null AND lifecycle_status = 4 and approval_datetime>='2020-01-01'
+)
+
+select repayment_group,date_trunc('MONTH',approval_datetime) as approval_datetime,
+count(user_id) as customers
+from ccat group by 1,2
+
